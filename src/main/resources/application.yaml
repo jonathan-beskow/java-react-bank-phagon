@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: phegonbank
+  datasource:
+    url: jdbc:mysql://localhost:3307/bank
+    username: root
+    password:
+
+server:
+  port: 8080
