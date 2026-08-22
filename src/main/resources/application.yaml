@@ -1,10 +1,12 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: phegonbank
   datasource:
-    url: jdbc:mysql://localhost:3307/bank
-    username: root
-    password:
+    url: ${LOCAL_DB_URL}
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
 
 server:
   port: 8080
