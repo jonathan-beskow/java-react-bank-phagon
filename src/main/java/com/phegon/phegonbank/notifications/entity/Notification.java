@@ -1,22 +1,24 @@
 package com.phegon.phegonbank.notifications.entity;
 
+import com.phegon.phegonbank.auth_users.entity.User;
 import com.phegon.phegonbank.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.security.core.userdetails.User;
+
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "notifications")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Table(name = "notifications")
 public class Notification {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,14 +28,13 @@ public class Notification {
     private String recipient;
 
     private String body;
+
     @Enumerated(EnumType.STRING)
-    private NotificationType notificationType;
+    private NotificationType type; // EMAIL, SMS, PUSH
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     private final LocalDateTime createdAt = LocalDateTime.now();
-
-
 }
