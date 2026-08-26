@@ -1,24 +1,27 @@
 spring:
   config:
     import: optional:file:.env[.properties]
+
   application:
     name: phegonbank
+
   datasource:
     url: ${LOCAL_DB_URL}
     username: ${LOCAL_DB_USERNAME}
     password: ${LOCAL_DB_PASSWORD}
+
   mail:
-    username: ${MAIL_USER}
-    password: ${MAIL_PASSWORD}
     host: smtp.gmail.com
     port: 587
+    username: ${MAIL_USER}
+    password: ${MAIL_PASS}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
-            enabled: true
-          required: true
+            enable: true
+            required: true
 
 server:
   port: 8080
@@ -28,5 +31,3 @@ jwt:
     string: ${JWT_SECRET}
   expiration:
     time: ${JWT_EXPIRATION_TIME}
-
-#Mail Configuration
