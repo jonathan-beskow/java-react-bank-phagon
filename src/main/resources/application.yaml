@@ -10,6 +10,12 @@ spring:
     username: ${LOCAL_DB_USERNAME}
     password: ${LOCAL_DB_PASSWORD}
 
+  # Configuração do JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true  # opcional — exibe as queries no console
+
   mail:
     host: smtp.gmail.com
     port: 587
