@@ -9,12 +9,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableAsync
 @RequiredArgsConstructor
-public class PhegonbankApplication {
+public class JbankApplication {
 
     private final NotificationService notificationService;
 
     public static void main(String[] args) {
-        SpringApplication.run(PhegonbankApplication.class, args);
+        SpringApplication.run(JbankApplication.class, args);
     }
 
 //    @Bean

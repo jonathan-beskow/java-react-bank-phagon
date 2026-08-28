@@ -37,3 +37,7 @@ jwt:
     string: ${JWT_SECRET}
   expiration:
     time: ${JWT_EXPIRATION_TIME}
+
+password:
+  reset:
+    link: http://localhost:3000/reset-password?code=
