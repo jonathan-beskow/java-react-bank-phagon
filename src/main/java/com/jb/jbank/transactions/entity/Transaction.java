@@ -33,7 +33,7 @@ public class Transaction {
     private TransactionType transactionType;
 
     @Column(nullable = false)
-    private LocalDateTime transactionData = LocalDateTime.now();
+    private LocalDateTime transactionDate = LocalDateTime.now();
 
     private String description;
 
