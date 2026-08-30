@@ -6,6 +6,7 @@ import com.jb.jbank.auth_users.entity.User;
 import com.jb.jbank.auth_users.services.UserService;
 import com.jb.jbank.enums.TransactionStatus;
 import com.jb.jbank.enums.TransactionType;
+import com.jb.jbank.exceptions.specificExceptions.BadRequestException;
 import com.jb.jbank.exceptions.specificExceptions.InsufficientBalanceException;
 import com.jb.jbank.exceptions.specificExceptions.InvalidTransactionException;
 import com.jb.jbank.exceptions.specificExceptions.NotFoundException;
@@ -20,6 +21,10 @@ import com.jb.jbank.transactions.services.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -59,21 +64,29 @@ public class TransactionServiceImpl implements TransactionService {
 
         sendTransactionNotification(savedTran);
 
-        return Response.builder()
-                .statusCode(200)
-                .message("Transaction finished successfully")
-                .build();
+        return Response.builder().statusCode(200).message("Transaction finished successfully").build();
     }
 
 
     @Override
     public Response<List<TransactionDTO>> getTransactionForMyAccount(String accountNumber, int page, int size) {
-        return null;
+
+        User user = userService.getCurrentLoggedInUser();
+        Account account = accountRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new NotFoundException("Account not found"));
+
+        if (!account.getUser().getId().equals(user.getId())) {
+            throw new BadRequestException("Account does not belong to the authenticated user");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("transactionDate").descending());
+        Page<Transaction> txns = transactionRepository.findByAccount_AccountNumber(accountNumber, pageable);
+        List<TransactionDTO> transactionDTOS = txns.getContent().stream().map(transaction -> modelMapper.map(transaction, TransactionDTO.class)).toList();
+
+        return Response.<List<TransactionDTO>>builder().statusCode(200).message("Transactions retrivied").data(transactionDTOS).meta(Map.of("currentPage", txns.getNumber(), "totalItems", txns.getTotalElements(), "totalPages", txns.getTotalPages(), "pageSize", txns.getSize())).build();
     }
 
     private void handleDeposit(TransactionRequest request, Transaction transaction) {
-        Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
-                .orElseThrow(() -> new NotFoundException("Account not found"));
+        Account account = accountRepository.findByAccountNumber(request.getAccountNumber()).orElseThrow(() -> new NotFoundException("Account not found"));
 
         account.setBalance(account.getBalance().add(request.getAmount()));
         transaction.setAccount(account);
@@ -82,8 +95,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void handleWithDraw(TransactionRequest request, Transaction transaction) {
 
-        Account account = accountRepository.findByAccountNumber(request.getAccountNumber())
-                .orElseThrow(() -> new NotFoundException("Account not found"));
+        Account account = accountRepository.findByAccountNumber(request.getAccountNumber()).orElseThrow(() -> new NotFoundException("Account not found"));
 
         if ((account.getBalance().compareTo(request.getAmount())) < 0) {
             throw new InsufficientBalanceException("Insufficient balance");
@@ -96,11 +108,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void handleTransfer(TransactionRequest request, Transaction transaction) {
 
-        Account sourceAccount = accountRepository.findByAccountNumber(request.getAccountNumber())
-                .orElseThrow(() -> new NotFoundException("Account not found"));
+        Account sourceAccount = accountRepository.findByAccountNumber(request.getAccountNumber()).orElseThrow(() -> new NotFoundException("Account not found"));
 
-        Account destinationAccount = accountRepository.findByAccountNumber(request.getDestinationAccountNumber())
-                .orElseThrow(() -> new NotFoundException("Account not found"));
+        Account destinationAccount = accountRepository.findByAccountNumber(request.getDestinationAccountNumber()).orElseThrow(() -> new NotFoundException("Account not found"));
 
         if ((sourceAccount.getBalance().compareTo(request.getAmount())) < 0) {
             throw new InsufficientBalanceException("Insufficient balance");
@@ -136,26 +146,14 @@ public class TransactionServiceImpl implements TransactionService {
             subject = "Credit Alert";
             template = "credit-alert";
 
-            NotificationDTO notificationEmail = NotificationDTO
-                    .builder()
-                    .recipient(user.getEmail())
-                    .subject(subject)
-                    .templateName(template)
-                    .templateVariables(templateVariables)
-                    .build();
+            NotificationDTO notificationEmail = NotificationDTO.builder().recipient(user.getEmail()).subject(subject).templateName(template).templateVariables(templateVariables).build();
             notificationService.sendEmail(notificationEmail, user);
 
         } else if (savedTran.getTransactionType() == TransactionType.WITHDRAW) {
             subject = "Debit Alert";
             template = "debit-alert";
 
-            NotificationDTO notificationEmail = NotificationDTO
-                    .builder()
-                    .recipient(user.getEmail())
-                    .subject(subject)
-                    .templateName(template)
-                    .templateVariables(templateVariables)
-                    .build();
+            NotificationDTO notificationEmail = NotificationDTO.builder().recipient(user.getEmail()).subject(subject).templateName(template).templateVariables(templateVariables).build();
 
             notificationService.sendEmail(notificationEmail, user);
         } else if (savedTran.getTransactionType() == TransactionType.TRANSFER) {
@@ -163,17 +161,10 @@ public class TransactionServiceImpl implements TransactionService {
             subject = "Debit Alert";
             template = "debit-alert";
 
-            NotificationDTO notificationEmail = NotificationDTO
-                    .builder()
-                    .recipient(user.getEmail())
-                    .subject(subject)
-                    .templateName(template)
-                    .templateVariables(templateVariables)
-                    .build();
+            NotificationDTO notificationEmail = NotificationDTO.builder().recipient(user.getEmail()).subject(subject).templateName(template).templateVariables(templateVariables).build();
             notificationService.sendEmail(notificationEmail, user);
 
-            Account destinationAccount = accountRepository.findByAccountNumber(savedTran.getDestinationAccount())
-                    .orElseThrow(() -> new NotFoundException("Account not found"));
+            Account destinationAccount = accountRepository.findByAccountNumber(savedTran.getDestinationAccount()).orElseThrow(() -> new NotFoundException("Account not found"));
 
             User receiver = destinationAccount.getUser();
 
@@ -185,13 +176,7 @@ public class TransactionServiceImpl implements TransactionService {
             receiverVariables.put("date", savedTran.getTransactionDate());
             receiverVariables.put("balance", savedTran.getAccount().getBalance());
 
-            NotificationDTO receiverEmail = NotificationDTO
-                    .builder()
-                    .recipient(receiver.getEmail())
-                    .subject("Credit Alert")
-                    .templateName("credit-alert")
-                    .templateVariables(receiverVariables)
-                    .build();
+            NotificationDTO receiverEmail = NotificationDTO.builder().recipient(receiver.getEmail()).subject("Credit Alert").templateName("credit-alert").templateVariables(receiverVariables).build();
 
             notificationService.sendEmail(receiverEmail, receiver);
 

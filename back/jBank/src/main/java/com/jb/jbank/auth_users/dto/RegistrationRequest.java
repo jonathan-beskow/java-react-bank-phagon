@@ -2,11 +2,13 @@ package com.jb.jbank.auth_users.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@Builder
 public class RegistrationRequest {
 
     @NotBlank(message = "First name is required")
