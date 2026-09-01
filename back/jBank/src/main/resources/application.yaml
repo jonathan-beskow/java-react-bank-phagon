@@ -40,3 +40,11 @@ jwt:
 password:
   reset:
     link: http://localhost:3000/reset-password?code=
+
+#AWS S3 CONFIG
+#aws:
+#  accessKeyId: ${AWS_ACCESS_KEY}
+#  secretAccessKey: ${AWS_SECRET_KEY}
+#  region:
+#    s3:
+#      bucketName: ${AWS_BUCKET_NAME}
